@@ -6,7 +6,7 @@ import (
 	nhttp "net/http"
 	"os"
 
-	"app"
+	"github.com/dpasichnyk/cycletls_go/app"
 )
 
 func setupRoutes() {

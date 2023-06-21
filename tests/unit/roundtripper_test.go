@@ -1,7 +1,7 @@
 package cycletls_test
 
 import (
-	cycletls "github.com/dpasichnyk/CycleTLS/cycletls"
+	cycletls "github.com/dpasichnyk/cycletls_go"
 	"testing"
 )
 

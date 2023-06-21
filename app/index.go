@@ -381,5 +381,7 @@ func main() {
 	}
 
 	setupRoutes()
+	log.Print("----------test Print")
+	log.Fatal("----------test Fatal")
 	log.Fatal(nhttp.ListenAndServe(*addr, nil))
 }

@@ -9,7 +9,7 @@ import (
 	"log"
 	"testing"
 
-	cycletls "github.com/dpasichnyk/CycleTLS/cycletls"
+	cycletls "github.com/dpasichnyk/cycletls_go"
 )
 
 type CycleTLSOptions struct {
