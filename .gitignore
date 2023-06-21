@@ -1,0 +1,7 @@
+dist
+ignore
+.env
+golang/go.sum
+go.mod
+go.sum
+.idea
