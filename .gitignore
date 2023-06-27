@@ -5,3 +5,4 @@ golang/go.sum
 go.mod
 go.sum
 .idea
+tmp

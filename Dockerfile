@@ -1,5 +1,12 @@
-FROM alpine:3.18
+FROM golang:1.20-alpine
 
-RUN apk add --no-cache htop
+WORKDIR /code
 
-EXPOSE 9112
+RUN apk add htop
+
+RUN go install github.com/cosmtrek/air@latest
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+CMD ["air", "-c", ".air.toml"]
