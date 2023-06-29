@@ -5,6 +5,8 @@ import (
 	"flag"
 
 	_ "github.com/KimMachineGun/automemlimit"
+	"go.elastic.co/apm"
+	"go.elastic.co/apm/module/apmhttp"
 
 	"io/ioutil"
 	"log"
@@ -17,6 +19,8 @@ import (
 	"os"
 	"strings"
 )
+
+var tracingClient = apmhttp.WrapClient(http.DefaultClient)
 
 // Options sets CycleTLS client options
 type Options struct {
@@ -72,6 +76,7 @@ type CycleTLS struct {
 
 // ready Request
 func processRequest(request cycleTLSRequest) (result fullRequest) {
+	log.Print("----processRequest called")
 
 	var browser = browser{
 		JA3:       request.Options.Ja3,
@@ -172,6 +177,7 @@ func processRequest(request cycleTLSRequest) (result fullRequest) {
 }
 
 func dispatcher(res fullRequest) (response Response, err error) {
+	log.Print("dispatcher")
 	resp, err := res.client.Do(res.req)
 	if err != nil {
 
@@ -208,9 +214,10 @@ func dispatcher(res fullRequest) (response Response, err error) {
 
 }
 
+// TODO: not used
 // Queue queues request in worker pool
 func (client CycleTLS) Queue(URL string, options Options, Method string) {
-
+	log.Print("----Queue called")
 	options.URL = URL
 	options.Method = Method
 	//TODO add timestamp to request
@@ -219,8 +226,10 @@ func (client CycleTLS) Queue(URL string, options Options, Method string) {
 	client.ReqChan <- response
 }
 
+// TODO: not used
 // Do creates a single request
 func (client CycleTLS) Do(URL string, options Options, Method string) (response Response, err error) {
+	log.Print("----Do called")
 
 	options.URL = URL
 	options.Method = Method
@@ -236,10 +245,11 @@ func (client CycleTLS) Do(URL string, options Options, Method string) (response 
 	return response, nil
 }
 
-//TODO rename this
-
+// TODO rename this
+// TODO: not used
 // Init starts the worker pool or returns a empty cycletls struct
 func Init(workers ...bool) CycleTLS {
+	log.Print("---Init called")
 	if len(workers) > 0 && workers[0] {
 		reqChan := make(chan fullRequest)
 		respChan := make(chan Response)
@@ -261,6 +271,7 @@ func (client CycleTLS) Close() {
 
 // Worker Pool
 func workerPool(reqChan chan fullRequest, respChan chan Response) {
+	log.Print("workerPool called")
 	//MAX
 	for i := 0; i < 100; i++ {
 		go worker(reqChan, respChan)
@@ -279,6 +290,7 @@ func worker(reqChan chan fullRequest, respChan chan Response) {
 }
 
 func readSocket(reqChan chan fullRequest, c *websocket.Conn) {
+	log.Print("readSocket called")
 	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
@@ -298,6 +310,8 @@ func readSocket(reqChan chan fullRequest, c *websocket.Conn) {
 
 		reply := processRequest(*request)
 
+		log.Print("reply", reply)
+
 		reqChan <- reply
 	}
 }
@@ -312,6 +326,7 @@ func writeSocket(respChan chan Response, c *websocket.Conn) {
 				continue
 			}
 			err = c.WriteMessage(websocket.TextMessage, message)
+			log.Print("writeSocker", message)
 			if err != nil {
 				log.Print("Socket WriteMessage Failed" + err.Error())
 				continue
@@ -328,12 +343,16 @@ var upgrader = websocket.Upgrader{
 }
 
 func WSEndpoint(w nhttp.ResponseWriter, r *nhttp.Request) {
+	log.Print("--------WSEndpoint")
 	upgrader.CheckOrigin = func(r *nhttp.Request) bool { return true }
 
 	// upgrade this connection to a WebSocket
 	// connection
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		apm.CaptureError(r.Context(), err).Send()
+		http.Error(w, "failed to query backend", 500)
+
 		//Golang Received a non-standard request to this port, printing request
 		var data map[string]interface{}
 		bodyBytes, err := ioutil.ReadAll(r.Body)
@@ -380,8 +399,8 @@ func main() {
 		addr = flag.String("addr", ":9112", "http service address")
 	}
 
+	log.Print("app/index.go before setupRoutes")
+
 	setupRoutes()
-	log.Print("----------test Print")
-	log.Fatal("----------test Fatal")
 	log.Fatal(nhttp.ListenAndServe(*addr, nil))
 }
